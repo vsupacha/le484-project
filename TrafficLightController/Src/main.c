@@ -24,6 +24,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "bsp.h"
+#include "timer.h"
+#include "ctrler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,6 +63,13 @@ int fputc(int ch, FILE *f)
 {
     return ITM_SendChar(ch);
 }
+
+Event_t Event_Detect()
+{
+    Event_t evt = NO_EVT;
+
+    return evt;
+}
 /* USER CODE END 0 */
 
 /**
@@ -69,7 +79,7 @@ int fputc(int ch, FILE *f)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+    
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,9 +110,11 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-    printf("Hello, world\n");
-    HAL_Delay(1000);      
+    /* USER CODE BEGIN 3 */      
+    Event_t evt = Event_Detect();   
+    uint32_t timeout_value = Ctrler_Exec(evt);
+    Timeout_Config(timeout_value);
+    Delay(1);
   }
   /* USER CODE END 3 */
 }
@@ -152,9 +164,38 @@ void SystemClock_Config(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(RED_LAMP_GPIO_Port, RED_LAMP_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : MODE_SW_Pin */
+  GPIO_InitStruct.Pin = MODE_SW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MODE_SW_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : BUTTON1_Pin */
+  GPIO_InitStruct.Pin = BUTTON1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(BUTTON1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : RED_LAMP_Pin */
+  GPIO_InitStruct.Pin = RED_LAMP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(RED_LAMP_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
 }
 
